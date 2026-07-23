@@ -156,7 +156,7 @@ Because Companion was never the answer.
 
 ## Team
 
-Built with love in 5 days for the Scripture in New Frontiers Hackathon.
+Built with love for Scripture in the New Frontiers Hackathon.
 
 ## License
 
