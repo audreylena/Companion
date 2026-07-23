@@ -23,21 +23,35 @@ const {
 const ok = (m) => console.log(`\x1b[32m✅ ${m}\x1b[0m`);
 const bad = (m) => console.log(`\x1b[31m❌ ${m}\x1b[0m`);
 
+const YV_BASE = "https://api.youversion.com/v1"; // 2026 YouVersion Platform API
+
 async function testYouVersion() {
   console.log("\n— YouVersion —");
-  if (!YOUVERSION_TOKEN) return bad("YOUVERSION_TOKEN missing in .env.local");
+  if (!YOUVERSION_TOKEN) return bad("YOUVERSION_TOKEN missing in .env.local (this holds your App Key)");
+  const headers = {
+    "accept": "application/json",
+    "X-YVP-App-Key": YOUVERSION_TOKEN, // identifies the app, NOT the user
+    "user-agent": "companion-spike/0.1",
+  };
   try {
-    const res = await fetch(`${YOUVERSION_BASE}/verse_of_the_day/1?version_id=1`, {
-      headers: {
-        "accept": "application/json",
-        "x-youversion-developer-token": YOUVERSION_TOKEN,
-        "user-agent": "companion-spike/0.1",
-      },
-    });
-    if (!res.ok) return bad(`YouVersion ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    const data = await res.json();
-    ok("YouVersion responded 200");
-    console.log(JSON.stringify(data, null, 2).slice(0, 800));
+    // 1) list available Bibles — proves the App Key authenticates
+        const bres = await fetch(`${YV_BASE}/bibles?language_ranges[]=eng`, { headers });
+    if (!bres.ok) return bad(`YouVersion /bibles ${bres.status}: ${(await bres.text()).slice(0, 300)}`);
+    const bibles = await bres.json();
+    ok("YouVersion /bibles responded 200");
+    const list = bibles?.data ?? bibles?.bibles ?? bibles;
+    const first = Array.isArray(list) ? list[0] : undefined;
+    console.log(`Bibles available: ${Array.isArray(list) ? list.length : "?"}; first: ${JSON.stringify(first)?.slice(0, 200)}`);
+
+    // 2) pull John 3:16 from the first Bible — proves we can fetch real Scripture
+    const bibleId = first?.id ?? first?.bible_id;
+    if (bibleId) {
+      const pres = await fetch(`${YV_BASE}/bibles/${bibleId}/passages/JHN.3.16`, { headers });
+      if (!pres.ok) return bad(`YouVersion passage ${pres.status}: ${(await pres.text()).slice(0, 300)}`);
+      const passage = await pres.json();
+      ok("YouVersion passage responded 200");
+      console.log(JSON.stringify(passage, null, 2).slice(0, 600));
+    }
   } catch (e) {
     bad(`YouVersion threw: ${e.message}`);
   }
