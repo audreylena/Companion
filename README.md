@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🕊️ Companion
+# 🐻 Companion
 
 ### The faith companion that points away from itself.
 
