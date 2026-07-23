@@ -78,25 +78,68 @@ export function SectionHeading({
   );
 }
 
+const bubbleTone = {
+  primary: { background: "var(--primary-soft)", color: "var(--ink-blue)" },
+  surface: { background: "var(--surface-2)", color: "var(--ink-blue)" },
+  white: { background: "#fff", color: "var(--calm-ink)" },
+} as const;
+
 export function IconBubble({
   icon: Icon,
   className,
   size = 18,
+  box = 40,
+  radius = "rounded-2xl",
+  tone = "primary",
 }: {
   icon: LucideIcon;
   className?: string;
   size?: number;
+  box?: number;
+  radius?: string;
+  tone?: keyof typeof bubbleTone;
 }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center justify-center rounded-2xl shrink-0",
+        "inline-flex items-center justify-center shrink-0",
+        radius,
         className
       )}
-      style={{ width: 40, height: 40, background: "var(--primary-soft)", color: "var(--ink-blue)" }}
+      style={{ width: box, height: box, ...bubbleTone[tone] }}
     >
       <Icon size={size} />
     </span>
+  );
+}
+
+/* ---------------- callout (icon + tinted note) ---------------- */
+
+export function Callout({
+  icon: Icon,
+  children,
+  className,
+  center,
+}: {
+  icon?: LucideIcon;
+  children: ReactNode;
+  className?: string;
+  center?: boolean;
+}) {
+  return (
+    <Card
+      tint
+      className={cx(
+        "!py-4 flex gap-3",
+        center ? "items-center justify-center text-center" : "items-start",
+        className
+      )}
+    >
+      {Icon && (
+        <Icon size={18} className="shrink-0 mt-0.5" style={{ color: "var(--ink-blue)" }} />
+      )}
+      <div className="text-sm leading-relaxed text-[var(--text)]">{children}</div>
+    </Card>
   );
 }
 

@@ -6,6 +6,7 @@ import { useApp } from "@/components/AppShell";
 import {
   PageHeader,
   Card,
+  Callout,
   SectionHeading,
   SearchInput,
   Button,
@@ -167,13 +168,10 @@ export default function LanguagesPage() {
             </div>
           </Card>
 
-          <Card tint className="flex items-start gap-3 !py-4">
-            <Globe size={18} className="shrink-0 mt-0.5" style={{ color: "var(--ink-blue)" }} />
-            <p className="text-xs leading-relaxed" style={{ color: "var(--text)" }}>
-              Companion can offer Scripture and faith-sensitive support in the selected language when
-              supported by the connected YouVersion and Gloo APIs.
-            </p>
-          </Card>
+          <Callout icon={Globe}>
+            Companion can offer Scripture and faith-sensitive support in the selected language when
+            supported by the connected YouVersion and Gloo APIs.
+          </Callout>
 
           <div className="flex items-center gap-3">
             <Button variant="primary" icon={saved ? Check : undefined} onClick={() => setSaved(true)}>

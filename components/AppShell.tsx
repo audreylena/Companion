@@ -284,8 +284,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <main className="md:ml-64 min-h-screen">
-        <div className="max-w-6xl mx-auto px-5 md:px-8 py-7 md:py-9 pb-24 md:pb-14">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 py-7 md:py-9">
           {children}
+        </div>
+        <div className="max-w-6xl mx-auto px-5 md:px-8">
+          <footer
+            className="py-6 mt-4 mb-20 md:mb-8 text-center text-xs muted"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
+            Companion supports — never replaces — parents, pastors, counselors, teachers, or
+            qualified professionals.
+          </footer>
         </div>
       </main>
     </AppCtx.Provider>

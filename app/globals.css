@@ -85,6 +85,11 @@ body {
   border-radius: var(--r-md);
 }
 
+/* insert a hairline divider between stacked children (replaces manual divider divs) */
+.stack-divide > * + * {
+  border-top: 1px solid var(--border);
+}
+
 .eyebrow {
   font-size: 12px;
   font-weight: 600;
