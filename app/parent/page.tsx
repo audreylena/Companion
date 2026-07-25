@@ -84,9 +84,9 @@ export default function OverviewPage() {
 
       {/* quick actions */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <Link href="/advice"><Button variant="primary" icon={HeartHandshake}>Parent advice</Button></Link>
-        <Link href="/discussions"><Button variant="soft" icon={BookOpen}>Recent Scripture</Button></Link>
-        <Link href="/languages"><Button variant="ghost" icon={LanguagesIcon}>Languages</Button></Link>
+        <Link href="/parent/advice"><Button variant="primary" icon={HeartHandshake}>Parent advice</Button></Link>
+        <Link href="/parent/discussions"><Button variant="soft" icon={BookOpen}>Recent Scripture</Button></Link>
+        <Link href="/parent/languages"><Button variant="ghost" icon={LanguagesIcon}>Languages</Button></Link>
       </div>
 
       {!latest ? (
@@ -94,7 +94,7 @@ export default function OverviewPage() {
           emoji="🌤️"
           title="No recent reflections yet"
           note={`When ${child.name} and ${child.companionName} talk, you'll find summaries and Scripture here.`}
-          action={<Link href="/safety"><Button variant="soft">Review companion settings</Button></Link>}
+          action={<Link href="/parent/safety"><Button variant="soft">Review companion settings</Button></Link>}
         />
       ) : (
         <div className="grid lg:grid-cols-3 gap-5">

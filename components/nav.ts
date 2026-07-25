@@ -16,8 +16,8 @@ export interface NavItem {
    Scripture lives as a tab inside Discussions; Languages,
    Child Profiles, and Safety live as sections under Settings. */
 export const NAV: NavItem[] = [
-  { label: "Overview", href: "/", icon: LayoutDashboard },
-  { label: "Discussions", href: "/discussions", icon: MessagesSquare },
-  { label: "Parent Advice", href: "/advice", icon: HeartHandshake },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Overview", href: "/parent", icon: LayoutDashboard },
+  { label: "Discussions", href: "/parent/discussions", icon: MessagesSquare },
+  { label: "Parent Advice", href: "/parent/advice", icon: HeartHandshake },
+  { label: "Settings", href: "/parent/settings", icon: Settings },
 ];

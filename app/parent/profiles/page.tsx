@@ -114,7 +114,7 @@ export default function ProfilesPage() {
           <SectionHeading title="When to let you know" hint="You choose what reaches you" />
           <div className="stack-divide">
             <Link
-              href="/safety"
+              href="/parent/safety"
               className="flex items-start justify-between gap-4 py-3.5 rounded-xl -mx-2 px-2 transition-colors hover:bg-[var(--surface-2)]"
             >
               <span className="min-w-0">

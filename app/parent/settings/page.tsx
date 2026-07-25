@@ -121,10 +121,10 @@ export default function SettingsPage() {
         <Card>
           <SectionHeading title="Manage" hint="Language, profiles, safety & notifications" />
           <div>
-            <LinkRow href="/languages" icon={LangIcon} label="Language" desc="Spoken, dashboard & Scripture" />
-            <LinkRow href="/profiles" icon={Users} label="Child profiles" desc="Add or switch children" />
-            <LinkRow href="/safety" icon={ShieldCheck} label="Safety & privacy" desc="Boundaries, alerts & what's kept" />
-            <LinkRow href="/profiles" icon={Bell} label="Notifications" desc="What reaches you, and when" />
+            <LinkRow href="/parent/languages" icon={LangIcon} label="Language" desc="Spoken, dashboard & Scripture" />
+            <LinkRow href="/parent/profiles" icon={Users} label="Child profiles" desc="Add or switch children" />
+            <LinkRow href="/parent/safety" icon={ShieldCheck} label="Safety & privacy" desc="Boundaries, alerts & what's kept" />
+            <LinkRow href="/parent/profiles" icon={Bell} label="Notifications" desc="What reaches you, and when" />
           </div>
         </Card>
 

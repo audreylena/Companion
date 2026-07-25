@@ -108,8 +108,8 @@ export function ConversationSummaryCard({ c }: { c: Conversation }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Link href="/advice"><Button variant="soft" icon={MessageCircleHeart}>See parent advice</Button></Link>
-          <Link href="/discussions"><Button variant="ghost" icon={ArrowRight}>All discussions</Button></Link>
+          <Link href="/parent/advice"><Button variant="soft" icon={MessageCircleHeart}>See parent advice</Button></Link>
+          <Link href="/parent/discussions"><Button variant="ghost" icon={ArrowRight}>All discussions</Button></Link>
         </div>
       </div>
     </Card>
