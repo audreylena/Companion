@@ -113,13 +113,13 @@ export default function OverviewPage() {
 
           {/* side column */}
           <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-4">
               <Stat icon={MessagesSquare} label="Reflections" value={stats.count} hint="this week" />
               <Stat
                 icon={Sparkles}
                 label="Theme"
                 value={
-                  <span className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 flex-wrap">
                     <span aria-hidden>{themeEmoji[stats.topTheme as ThemeCategory] ?? "🌟"}</span>
                     {stats.topTheme}
                   </span>

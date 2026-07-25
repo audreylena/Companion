@@ -247,7 +247,7 @@ export function Stat({
         <IconBubble icon={Icon} />
         <div className="min-w-0">
           <p className="eyebrow">{label}</p>
-          <p className="text-lg font-bold leading-tight mt-0.5 truncate" style={{ color: "var(--text)" }}>
+          <p className="text-base font-bold leading-tight mt-0.5 break-words text-[var(--text)]">
             {value}
           </p>
         </div>
