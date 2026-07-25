@@ -11,6 +11,7 @@ import {
   Toggle,
   Chip,
   Button,
+  IconBubble,
 } from "@/components/ui";
 
 type Level = "younger" | "balanced" | "older";
@@ -39,14 +40,11 @@ export default function SafetyPage() {
 
       {/* status */}
       <div className="card !p-5 mb-5 flex items-center gap-4" style={{ background: "var(--calm-bg)" }}>
-        <span className="inline-flex items-center justify-center rounded-2xl shrink-0"
-          style={{ width: 46, height: 46, background: "#fff", color: "var(--calm-ink)" }}>
-          <ShieldCheck size={22} />
-        </span>
+        <IconBubble icon={ShieldCheck} box={46} size={22} tone="white" />
         <div>
           <p className="text-base font-bold" style={{ color: "var(--calm-ink)" }}>Safety settings active</p>
           <p className="text-sm" style={{ color: "#40614f" }}>
-            Companion is watching over gentle boundaries and knows when to bring a moment to you.
+            Companion is watching over the boundaries you set and knows when to bring a moment to you.
           </p>
         </div>
       </div>
@@ -67,15 +65,13 @@ export default function SafetyPage() {
               ]}
             />
           </div>
-          <div style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="stack-divide" style={{ borderTop: "1px solid var(--border)" }}>
             <Toggle checked={scriptureOnly} onChange={setScriptureOnly}
               label="Scripture-only mode" description="Keep responses centered on Scripture and prayer." />
-            <div style={{ borderTop: "1px solid var(--border)" }} />
             <Toggle checked={reflection} onChange={setReflection}
               label="Reflection & breathing exercises" description="Allow short calming moments during a conversation." />
-            <div style={{ borderTop: "1px solid var(--border)" }} />
             <Toggle checked={advice} onChange={setAdvice}
-              label="Generate parent advice" description="Offer gentle follow-up suggestions in your dashboard." />
+              label="Generate parent advice" description="Offer follow-up suggestions in your dashboard." />
           </div>
         </Card>
 
@@ -143,14 +139,6 @@ export default function SafetyPage() {
           </div>
         </Card>
       </div>
-
-      {/* reassurance */}
-      <Card tint className="mt-5 !py-4">
-        <p className="text-sm text-center leading-relaxed" style={{ color: "var(--text)" }}>
-          Companion is designed to <strong>support — never replace</strong> — parents, pastors,
-          counselors, teachers, or qualified professionals.
-        </p>
-      </Card>
     </>
   );
 }
