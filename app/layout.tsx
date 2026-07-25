@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "Companion — Parent Space",
+  title: "Companion",
   description:
-    "A calm, multilingual parent companion for a Scripture-integrated plushie experience.",
+    "A faith companion for children — and a calm discipleship briefing for their parents.",
 };
 
 export default function RootLayout({
@@ -13,9 +12,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>
-        <AppShell>{children}</AppShell>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
