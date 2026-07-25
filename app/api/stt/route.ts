@@ -3,10 +3,10 @@ import { getSttProvider, SttError } from "@/lib/stt";
 /**
  * POST /api/stt — audio in, text out.
  *
- * The one contract shared by every listening device. Today Safari posts an
- * MP4 from app/(device)/talk; tomorrow a Raspberry Pi in a plushie posts a WAV:
+ * The one contract shared by every listening device. Today a desktop browser
+ * posts WebM from app/(device)/talk; tomorrow a Raspberry Pi posts a WAV:
  *
- *   curl -X POST -F "audio=@clip.wav" -F "language=en" https://…/api/stt
+ *   curl -X POST -F "audio=@clip.wav" -F "language=en" http://…/api/stt
  *
  * Audio is never written to disk. It lives in memory for the duration of this
  * request and only the transcript survives.
@@ -14,8 +14,9 @@ import { getSttProvider, SttError } from "@/lib/stt";
 
 const MAX_BYTES = 10 * 1024 * 1024; // ~20x any plausible child utterance
 
-// OpenAI infers the container from the filename extension, but Safari's
-// MediaRecorder hands us a blob named "blob" with no extension. Re-derive it.
+// OpenAI infers the container from the filename extension, but MediaRecorder
+// hands us a blob with no extension. Re-derive it from the MIME type. The
+// table stays broad so any future device can post whatever it records.
 const EXT_BY_MIME: Record<string, string> = {
   "audio/mp4": "mp4",
   "audio/m4a": "m4a",

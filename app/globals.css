@@ -172,25 +172,18 @@ body {
 
 /* ============================================================
    Device surface — the plushie stand-in (app/(device))
-   Full-bleed, no chrome, built for a child's thumb.
+   Desktop browsers only for now.
    ============================================================ */
 
 .device-root {
-  min-height: 100svh;              /* svh: ignores Safari's collapsing toolbar */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-           env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-/* The press target. Long-press on iOS otherwise selects text, pops the
-   callout menu, and scrolls the page out from under the child's thumb. */
+/* Press-and-hold target. user-select off so holding doesn't select the label. */
 .talk-button {
-  touch-action: none;
   user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
   cursor: pointer;
   border: none;
   border-radius: 999px;

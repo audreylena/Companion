@@ -50,15 +50,12 @@ export default function TalkPage() {
               listening ? "talk-button--listening" : ""
             } ${busy ? "talk-button--thinking" : ""}`}
             disabled={busy}
-            // Pointer events cover finger and mouse in one path, so the page
-            // stays debuggable on a desktop browser.
             onPointerDown={start}
             onPointerUp={stop}
-            // A notification or incoming call must not strand us in "listening".
-            onPointerCancel={stop}
+            // Dragging off the button, or the browser stealing the pointer,
+            // must not strand us in "listening".
             onPointerLeave={stop}
-            // Belt and braces against Safari's long-press callout.
-            onContextMenu={(e) => e.preventDefault()}
+            onPointerCancel={stop}
           >
             <Mic size={44} strokeWidth={1.75} />
             <span className="text-sm font-semibold">

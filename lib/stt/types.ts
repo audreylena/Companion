@@ -1,9 +1,9 @@
 /**
  * Speech-to-text adapter boundary.
  *
- * The phone is a stand-in for plushie hardware, so nothing above this
- * interface may assume a browser. A Raspberry Pi posting a WAV file must be
- * indistinguishable from Safari posting an MP4.
+ * The browser is only a stand-in for plushie hardware, so nothing behind this
+ * interface may assume one. A Raspberry Pi posting a WAV must be
+ * indistinguishable from a laptop posting a WebM.
  */
 
 export interface Transcript {

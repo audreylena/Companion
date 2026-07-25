@@ -5,10 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /**
  * Hold-to-talk recorder for the device surface.
  *
- * Every browser-specific API lives here so the page stays declarative. The
- * awkward parts are all iOS: Safari records MP4 rather than WebM, refuses
- * getUserMedia outside a secure context, and leaves the orange mic indicator
- * lit until every track is explicitly stopped.
+ * Desktop browsers only. Every browser API lives here so the page stays
+ * declarative. Note that getUserMedia still requires a secure context —
+ * localhost counts, so `npm run dev` works without any TLS setup.
  */
 
 export type RecorderState =
@@ -18,16 +17,15 @@ export type RecorderState =
   | "done"
   | "error";
 
-/** Safari first — it supports neither WebM nor Opus. */
+/** Chrome/Edge give the first, Firefox the last. */
 const MIME_CANDIDATES = [
-  "audio/mp4",
   "audio/webm;codecs=opus",
   "audio/webm",
   "audio/ogg;codecs=opus",
+  "audio/ogg",
 ];
 
 const EXT_BY_MIME: Record<string, string> = {
-  "audio/mp4": "mp4",
   "audio/webm": "webm",
   "audio/ogg": "ogg",
 };
@@ -84,7 +82,7 @@ export function useRecorder({ language }: UseRecorderOptions = {}) {
       try {
         const form = new FormData();
         // Explicit filename: the server needs a real extension to infer the
-        // container, and Safari would otherwise name this "blob".
+        // container, and MediaRecorder would otherwise name this "blob".
         form.append("audio", blob, `clip.${extensionFor(mime)}`);
         if (language) form.append("language", language);
 
@@ -112,7 +110,7 @@ export function useRecorder({ language }: UseRecorderOptions = {}) {
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setError(
-        "This browser can't reach the microphone. Open the page over https.",
+        "This browser can't reach the microphone. Use localhost or https.",
       );
       setState("error");
       return;
@@ -138,7 +136,6 @@ export function useRecorder({ language }: UseRecorderOptions = {}) {
       stream,
       mimeType ? { mimeType } : undefined,
     );
-    // Safari can report an empty mimeType until recording starts.
     const effectiveMime = recorder.mimeType || mimeType || "audio/webm";
 
     chunksRef.current = [];
@@ -157,7 +154,7 @@ export function useRecorder({ language }: UseRecorderOptions = {}) {
     recorder.start();
     setState("listening");
 
-    // Bound upload size and cost if a thumb stays down.
+    // Bound upload size and cost if the button stays held.
     timeoutRef.current = setTimeout(() => {
       if (recorderRef.current?.state === "recording") {
         recorderRef.current.stop();
