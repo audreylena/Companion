@@ -17,12 +17,12 @@ export interface NavItem {
 }
 
 export const NAV: NavItem[] = [
-  { label: "Overview", href: "/", icon: LayoutDashboard },
-  { label: "Discussions", href: "/discussions", icon: MessagesSquare },
-  { label: "Parent Advice", href: "/advice", icon: HeartHandshake },
-  { label: "Scripture", href: "/scripture", icon: BookOpenText },
-  { label: "Languages", href: "/languages", icon: Languages },
-  { label: "Child Profiles", href: "/profiles", icon: Users },
-  { label: "Safety", href: "/safety", icon: ShieldCheck },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Overview", href: "/parent", icon: LayoutDashboard },
+  { label: "Discussions", href: "/parent/discussions", icon: MessagesSquare },
+  { label: "Parent Advice", href: "/parent/advice", icon: HeartHandshake },
+  { label: "Scripture", href: "/parent/scripture", icon: BookOpenText },
+  { label: "Languages", href: "/parent/languages", icon: Languages },
+  { label: "Child Profiles", href: "/parent/profiles", icon: Users },
+  { label: "Safety", href: "/parent/safety", icon: ShieldCheck },
+  { label: "Settings", href: "/parent/settings", icon: Settings },
 ];

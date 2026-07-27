@@ -123,7 +123,7 @@ function ChildSwitcher() {
             ))}
             <li>
               <Link
-                href="/profiles"
+                href="/parent/profiles"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 w-full rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-[var(--surface-2)] muted"
               >
