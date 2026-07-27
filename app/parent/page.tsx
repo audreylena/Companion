@@ -20,6 +20,7 @@ import {
   Button,
   EmptyState,
   SafetyBadge,
+  IconBubble,
 } from "@/components/ui";
 import {
   ConversationSummaryCard,
@@ -53,19 +54,18 @@ export default function OverviewPage() {
   if (latest?.askedForAdvice)
     insights.push({
       icon: HeartHandshake,
-      text: `${child.name} asked for a little guidance about "${latest.topic.toLowerCase()}." There's a gentle way to follow up waiting for you.`,
+      text: `${child.name} asked for a little guidance about "${latest.topic.toLowerCase()}." There's a way to follow up waiting for you.`,
     });
   if (stats.count > 0)
     insights.push({
       icon: Lightbulb,
       text: `This week's reflections leaned toward ${String(stats.topTheme).toLowerCase()}. A small, unhurried conversation could mean a lot.`,
     });
-  insights.push({
-    icon: ShieldCheck,
-    text: stats.anyAlert
-      ? "One reflection may be worth a closer look — see Discussions for a gentle summary."
-      : "No urgent safety concerns were identified this week.",
-  });
+  if (stats.anyAlert)
+    insights.push({
+      icon: ShieldCheck,
+      text: "One reflection may be worth a closer look — see Discussions for a summary.",
+    });
 
   return (
     <>
@@ -85,7 +85,7 @@ export default function OverviewPage() {
       {/* quick actions */}
       <div className="flex flex-wrap gap-2 mb-6">
         <Link href="/parent/advice"><Button variant="primary" icon={HeartHandshake}>Parent advice</Button></Link>
-        <Link href="/parent/scripture"><Button variant="soft" icon={BookOpen}>Recent Scripture</Button></Link>
+        <Link href="/parent/discussions"><Button variant="soft" icon={BookOpen}>Recent Scripture</Button></Link>
         <Link href="/parent/languages"><Button variant="ghost" icon={LanguagesIcon}>Languages</Button></Link>
       </div>
 
@@ -93,7 +93,7 @@ export default function OverviewPage() {
         <EmptyState
           emoji="🌤️"
           title="No recent reflections yet"
-          note={`When ${child.name} and ${child.companionName} talk, you'll find gentle summaries and Scripture here.`}
+          note={`When ${child.name} and ${child.companionName} talk, you'll find summaries and Scripture here.`}
           action={<Link href="/parent/safety"><Button variant="soft">Review companion settings</Button></Link>}
         />
       ) : (
@@ -105,7 +105,7 @@ export default function OverviewPage() {
             <Card>
               <SectionHeading
                 title="Faith moments this week"
-                hint="A gentle sense of rhythm — not a report card"
+                hint="A sense of rhythm — not a report card"
               />
               <WeeklyBars data={freq} />
             </Card>
@@ -113,13 +113,13 @@ export default function OverviewPage() {
 
           {/* side column */}
           <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-4">
               <Stat icon={MessagesSquare} label="Reflections" value={stats.count} hint="this week" />
               <Stat
                 icon={Sparkles}
                 label="Theme"
                 value={
-                  <span className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 flex-wrap">
                     <span aria-hidden>{themeEmoji[stats.topTheme as ThemeCategory] ?? "🌟"}</span>
                     {stats.topTheme}
                   </span>
@@ -129,7 +129,6 @@ export default function OverviewPage() {
               <div className="card !p-5">
                 <p className="eyebrow mb-2">Safety</p>
                 <SafetyBadge level={stats.anyAlert ? "attention" : "ok"} />
-                <p className="text-xs mt-3 muted">Companion supports — never replaces — you.</p>
               </div>
             </div>
 
@@ -140,13 +139,8 @@ export default function OverviewPage() {
                   const Icon = it.icon;
                   return (
                     <li key={i} className="flex gap-3">
-                      <span
-                        className="inline-flex items-center justify-center rounded-xl shrink-0"
-                        style={{ width: 32, height: 32, background: "var(--primary-soft)", color: "var(--ink-blue)" }}
-                      >
-                        <Icon size={16} />
-                      </span>
-                      <p className="text-sm leading-relaxed" style={{ color: "var(--text)" }}>{it.text}</p>
+                      <IconBubble icon={Icon} box={32} size={16} radius="rounded-xl" />
+                      <p className="text-sm leading-relaxed text-[var(--text)]">{it.text}</p>
                     </li>
                   );
                 })}

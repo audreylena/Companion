@@ -6,14 +6,13 @@ import {
   Languages as LangIcon,
   Users,
   ShieldCheck,
-  Lock,
   ChevronRight,
   LogOut,
   Plug,
   BadgeCheck,
 } from "lucide-react";
 import { useApp } from "@/components/AppShell";
-import { PageHeader, Card, SectionHeading, Button } from "@/components/ui";
+import { PageHeader, Card, SectionHeading, Button, IconBubble } from "@/components/ui";
 
 function LinkRow({
   href,
@@ -32,12 +31,9 @@ function LinkRow({
       className="flex items-center gap-3 py-3.5 transition-colors rounded-xl -mx-2 px-2 hover:bg-[var(--surface-2)]"
       style={{ borderBottom: "1px solid var(--border)" }}
     >
-      <span className="inline-flex items-center justify-center rounded-xl shrink-0"
-        style={{ width: 36, height: 36, background: "var(--surface-2)", color: "var(--ink-blue)" }}>
-        <Icon size={17} />
-      </span>
+      <IconBubble icon={Icon} box={36} size={17} radius="rounded-xl" tone="surface" />
       <span className="flex-1 min-w-0">
-        <span className="block text-sm font-medium" style={{ color: "var(--text)" }}>{label}</span>
+        <span className="block text-sm font-medium text-[var(--text)]">{label}</span>
         <span className="block text-xs muted">{desc}</span>
       </span>
       <ChevronRight size={17} className="muted" />
@@ -123,12 +119,11 @@ export default function SettingsPage() {
 
         {/* quick links */}
         <Card>
-          <SectionHeading title="Preferences" />
+          <SectionHeading title="Manage" hint="Language, profiles, safety & notifications" />
           <div>
             <LinkRow href="/parent/languages" icon={LangIcon} label="Language" desc="Spoken, dashboard & Scripture" />
             <LinkRow href="/parent/profiles" icon={Users} label="Child profiles" desc="Add or switch children" />
-            <LinkRow href="/parent/safety" icon={ShieldCheck} label="Safety controls" desc="Boundaries & alerts" />
-            <LinkRow href="/parent/safety" icon={Lock} label="Privacy" desc="What's kept, and for how long" />
+            <LinkRow href="/parent/safety" icon={ShieldCheck} label="Safety & privacy" desc="Boundaries, alerts & what's kept" />
             <LinkRow href="/parent/profiles" icon={Bell} label="Notifications" desc="What reaches you, and when" />
           </div>
         </Card>

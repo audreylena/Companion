@@ -29,9 +29,31 @@ import {
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
-/* ---------------- inline scripture ---------------- */
+/* ---------------- unified scripture renderer ----------------
+   variant="inline" → soft box with icon (used in summaries & advice)
+   variant="plain"  → bare reference + quote (used on Scripture cards)  */
 
-export function ScriptureInline({ ref, text }: { ref: string; text: string }) {
+export function ScriptureBlock({
+  reference,
+  text,
+  variant = "inline",
+}: {
+  reference: string;
+  text: string;
+  variant?: "inline" | "plain";
+}) {
+  if (variant === "plain") {
+    return (
+      <>
+        <p className="text-base font-bold mt-3" style={{ color: "var(--ink-blue)" }}>
+          {reference}
+        </p>
+        <p className="text-sm italic mt-1" style={{ color: "var(--text)" }}>
+          &ldquo;{text}&rdquo;
+        </p>
+      </>
+    );
+  }
   return (
     <div className="soft p-4 flex gap-3">
       <BookOpen size={18} className="shrink-0 mt-0.5" style={{ color: "var(--ink-blue)" }} />
@@ -40,7 +62,7 @@ export function ScriptureInline({ ref, text }: { ref: string; text: string }) {
           &ldquo;{text}&rdquo;
         </p>
         <p className="text-xs font-semibold mt-1.5" style={{ color: "var(--ink-blue)" }}>
-          {ref}
+          {reference}
         </p>
       </div>
     </div>
@@ -78,9 +100,9 @@ export function ConversationSummaryCard({ c }: { c: Conversation }) {
         <p className="text-sm leading-relaxed" style={{ color: "var(--text)" }}>
           {c.summary}
         </p>
-        <ScriptureInline ref={c.scriptureRef} text={c.scriptureText} />
+        <ScriptureBlock reference={c.scriptureRef} text={c.scriptureText} />
         <div className="soft p-4">
-          <p className="eyebrow mb-1.5">A gentle way to follow up</p>
+          <p className="eyebrow mb-1.5">A way to follow up</p>
           <p className="text-sm leading-relaxed" style={{ color: "var(--text)" }}>
             {c.parentFollowUp}
           </p>
@@ -146,9 +168,9 @@ export function ConversationCard({ c }: { c: Conversation }) {
 
       {open && (
         <div className="px-5 pb-5 space-y-3" style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
-          <ScriptureInline ref={c.scriptureRef} text={c.scriptureText} />
+          <ScriptureBlock reference={c.scriptureRef} text={c.scriptureText} />
           <div className="soft p-4">
-            <p className="eyebrow mb-1.5">A gentle way to follow up</p>
+            <p className="eyebrow mb-1.5">A way to follow up</p>
             <p className="text-sm leading-relaxed" style={{ color: "var(--text)" }}>{c.parentFollowUp}</p>
           </div>
           <p className="text-xs muted">{c.language} · {c.translation} · {c.safetyNote}</p>
@@ -179,8 +201,7 @@ export function ScriptureCard({ s }: { s: ScriptureRec }) {
         </button>
       </div>
 
-      <p className="text-base font-bold mt-3" style={{ color: "var(--ink-blue)" }}>{s.ref}</p>
-      <p className="text-sm italic mt-1" style={{ color: "var(--text)" }}>&ldquo;{s.preview}&rdquo;</p>
+      <ScriptureBlock reference={s.ref} text={s.preview} variant="plain" />
 
       <div className="soft p-3 mt-3">
         <p className="text-xs" style={{ color: "var(--text)" }}>
@@ -233,7 +254,7 @@ export function AdviceCard({ a }: { a: AdviceItem }) {
         </ul>
       </div>
 
-      <ScriptureInline ref={a.scriptureRef} text={a.scriptureText} />
+      <ScriptureBlock reference={a.scriptureRef} text={a.scriptureText} />
 
       <div className="flex items-center justify-between gap-3 pt-1">
         <p className="text-[11px] muted max-w-[62%]">

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Check, BookOpen, Languages as LangIcon, Heart, Accessibility } from "lucide-react";
+import Link from "next/link";
+import { Plus, Check, BookOpen, Languages as LangIcon, Heart, Accessibility, ChevronRight } from "lucide-react";
 import { useApp } from "@/components/AppShell";
-import { PageHeader, Card, SectionHeading, Button, Toggle, cx } from "@/components/ui";
+import { PageHeader, Card, SectionHeading, Button, Toggle, IconBubble, cx } from "@/components/ui";
 import { themeEmoji, type Child } from "@/lib/mock";
 
 function ProfileCard({
@@ -51,12 +52,9 @@ function ProfileCard({
 function InfoRow({ icon: Icon, label, value }: { icon: typeof BookOpen; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-      <span className="inline-flex items-center justify-center rounded-xl shrink-0"
-        style={{ width: 34, height: 34, background: "var(--surface-2)", color: "var(--ink-blue)" }}>
-        <Icon size={16} />
-      </span>
+      <IconBubble icon={Icon} box={34} size={16} radius="rounded-xl" tone="surface" />
       <span className="text-sm muted flex-1">{label}</span>
-      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>{value}</span>
+      <span className="text-sm font-medium text-[var(--text)]">{value}</span>
     </div>
   );
 }
@@ -105,38 +103,39 @@ export default function ProfilesPage() {
             <InfoRow icon={BookOpen} label="Reading level" value={child.readingLevel} />
             <InfoRow icon={Heart} label="Companion name" value={child.companionName} />
             <div className="flex items-center gap-3 py-3">
-              <span className="inline-flex items-center justify-center rounded-xl shrink-0"
-                style={{ width: 34, height: 34, background: "var(--surface-2)", color: "var(--ink-blue)" }}>
-                <Accessibility size={16} />
-              </span>
+              <IconBubble icon={Accessibility} box={34} size={16} radius="rounded-xl" tone="surface" />
               <span className="text-sm muted flex-1">Accessibility</span>
-              <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Calm voice, slower pace</span>
+              <span className="text-sm font-medium text-[var(--text)]">Calm voice, slower pace</span>
             </div>
           </div>
         </Card>
 
         <Card>
           <SectionHeading title="When to let you know" hint="You choose what reaches you" />
-          <Toggle
-            checked={activeNotify.highRisk}
-            onChange={(v) => setNotify({ ...activeNotify, highRisk: v })}
-            label="Sensitive or high-care moments"
-            description="Always recommended — you'll be notified right away."
-          />
-          <div style={{ borderTop: "1px solid var(--border)" }} />
-          <Toggle
-            checked={activeNotify.newTopics}
-            onChange={(v) => setNotify({ ...activeNotify, newTopics: v })}
-            label="New topics explored"
-            description="A gentle heads-up when a fresh theme comes up."
-          />
-          <div style={{ borderTop: "1px solid var(--border)" }} />
-          <Toggle
-            checked={activeNotify.dailyReflections}
-            onChange={(v) => setNotify({ ...activeNotify, dailyReflections: v })}
-            label="Daily reflection summary"
-            description="One calm summary at the end of the day."
-          />
+          <div className="stack-divide">
+            <Link
+              href="/parent/safety"
+              className="flex items-start justify-between gap-4 py-3.5 rounded-xl -mx-2 px-2 transition-colors hover:bg-[var(--surface-2)]"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-[var(--text)]">Sensitive or high-care moments</span>
+                <span className="block text-xs mt-0.5 muted">Always on — managed in Safety, so there&rsquo;s one place for it.</span>
+              </span>
+              <ChevronRight size={17} className="muted shrink-0 mt-0.5" />
+            </Link>
+            <Toggle
+              checked={activeNotify.newTopics}
+              onChange={(v) => setNotify({ ...activeNotify, newTopics: v })}
+              label="New topics explored"
+              description="A heads-up when a fresh theme comes up."
+            />
+            <Toggle
+              checked={activeNotify.dailyReflections}
+              onChange={(v) => setNotify({ ...activeNotify, dailyReflections: v })}
+              label="Daily reflection summary"
+              description="One calm summary at the end of the day."
+            />
+          </div>
         </Card>
       </div>
     </>
