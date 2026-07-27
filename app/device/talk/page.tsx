@@ -1,31 +1,94 @@
 "use client";
 
-import { Mic, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Mic, RotateCcw, BookOpen, Heart } from "lucide-react";
 import { useRecorder } from "@/components/device/useRecorder";
 
 /**
- * The plushie stand-in. One button, held down while the child speaks.
- *
- * This surface is deliberately disposable — it exists so the capture pipeline
- * can be exercised before the hardware exists. The durable pieces are
- * POST /api/stt and lib/stt.
+ * The plushie stand-in. Hold to talk → transcript (/api/stt) → companion turn
+ * (/api/interact). The reply is spoken with the browser's built-in speech
+ * synthesis so the device literally talks, with no extra API. The durable
+ * pieces are the two routes and lib/companion; this surface is disposable.
  */
 
-const PROMPT: Record<string, string> = {
-  idle: "Hold the button and tell me anything.",
-  listening: "I'm listening…",
-  thinking: "Thinking about what you said…",
-  done: "Here's what I heard:",
-  error: "Something went wrong.",
-};
+interface Turn {
+  category: "in_scope" | "wonder" | "danger";
+  reply: string;
+  verse: { ref: string; text: string } | null;
+  handoff: { line: string; urgent: boolean } | null;
+}
 
 export default function TalkPage() {
-  const { state, transcript, error, start, stop, reset } = useRecorder({
-    language: "en",
-  });
+  const { state, transcript, error, start, stop, reset } = useRecorder({ language: "en" });
+
+  const [replyState, setReplyState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [turn, setTurn] = useState<Turn | null>(null);
+  const [replyError, setReplyError] = useState("");
+  const fetchedFor = useRef("");
+
+  const speak = useCallback((text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95; // a touch slower — gentler for a child
+      u.pitch = 1.1;
+      window.speechSynthesis.speak(u);
+    } catch {
+      /* speech is a nicety; never let it break the flow */
+    }
+  }, []);
+
+  // Once we have a transcript, ask the brain for a reply.
+  useEffect(() => {
+    if (state !== "done" || !transcript) return;
+    if (fetchedFor.current === transcript) return; // guard against re-runs
+    fetchedFor.current = transcript;
+
+    setReplyState("loading");
+    setTurn(null);
+    setReplyError("");
+
+    (async () => {
+      try {
+        const res = await fetch("/api/interact", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text: transcript, child: { language: "en" } }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error ?? "The companion is unavailable.");
+        setTurn(data);
+        setReplyState("ready");
+        speak(data.reply);
+      } catch (e) {
+        setReplyError(e instanceof Error ? e.message : "Something went wrong.");
+        setReplyState("error");
+      }
+    })();
+  }, [state, transcript, speak]);
+
+  const resetAll = useCallback(() => {
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    fetchedFor.current = "";
+    setTurn(null);
+    setReplyState("idle");
+    setReplyError("");
+    reset();
+  }, [reset]);
 
   const listening = state === "listening";
-  const busy = state === "thinking";
+  const busy = state === "thinking" || replyState === "loading";
+
+  const prompt =
+    state === "listening" ? "I'm listening…"
+    : busy ? "Thinking about what you said…"
+    : replyState === "ready" ? "Here's what I want you to know:"
+    : state === "error" || replyState === "error" ? "Something went wrong."
+    : "Hold the button and tell me anything.";
+
+  const showReset =
+    replyState === "ready" || replyState === "error" || state === "error";
 
   return (
     <main className="flex flex-1 flex-col items-center justify-between px-6 py-10 text-center">
@@ -33,16 +96,12 @@ export default function TalkPage() {
         <p className="eyebrow">Companion</p>
       </header>
 
-      <div className="flex flex-col items-center gap-10">
-        <p
-          className="max-w-xs text-lg font-medium"
-          style={{ color: "var(--text)" }}
-          aria-live="polite"
-        >
-          {PROMPT[state]}
+      <div className="flex w-full max-w-sm flex-col items-center gap-8">
+        <p className="max-w-xs text-lg font-medium" style={{ color: "var(--text)" }} aria-live="polite">
+          {prompt}
         </p>
 
-        <div className="relative" style={{ width: 200, height: 200 }}>
+        <div className="relative" style={{ width: 180, height: 180 }}>
           {listening && <span className="talk-ring" aria-hidden />}
           <button
             type="button"
@@ -52,42 +111,75 @@ export default function TalkPage() {
             disabled={busy}
             onPointerDown={start}
             onPointerUp={stop}
-            // Dragging off the button, or the browser stealing the pointer,
-            // must not strand us in "listening".
             onPointerLeave={stop}
             onPointerCancel={stop}
           >
-            <Mic size={44} strokeWidth={1.75} />
+            <Mic size={40} strokeWidth={1.75} />
             <span className="text-sm font-semibold">
               {listening ? "Listening" : busy ? "One moment" : "Hold to talk"}
             </span>
           </button>
         </div>
 
-        {state === "done" && (
-          <div className="card max-w-sm" style={{ padding: 20 }}>
-            <p className="text-base" style={{ color: "var(--text)" }}>
-              {transcript ? `“${transcript}”` : "I didn't catch that."}
-            </p>
+        {/* what the child said */}
+        {transcript && replyState !== "idle" && (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            You said: <span style={{ color: "var(--text)" }}>“{transcript}”</span>
+          </p>
+        )}
+
+        {/* the companion's reply */}
+        {replyState === "ready" && turn && (
+          <div className="w-full space-y-3">
+            <div className="card" style={{ padding: 20 }}>
+              <p className="text-base leading-relaxed" style={{ color: "var(--text)" }}>
+                {turn.reply}
+              </p>
+            </div>
+
+            {turn.verse && (
+              <div className="soft flex gap-3 p-4 text-left">
+                <BookOpen size={18} className="shrink-0 mt-0.5" style={{ color: "var(--ink-blue)" }} />
+                <div>
+                  <p className="text-sm italic" style={{ color: "var(--text)" }}>“{turn.verse.text}”</p>
+                  <p className="text-xs font-semibold mt-1" style={{ color: "var(--ink-blue)" }}>{turn.verse.ref}</p>
+                </div>
+              </div>
+            )}
+
+            {turn.handoff && (
+              <div
+                className="flex items-start gap-2 rounded-2xl px-4 py-3 text-left text-sm"
+                style={
+                  turn.handoff.urgent
+                    ? { background: "var(--alert-bg)", color: "var(--alert-ink)" }
+                    : { background: "var(--primary-soft)", color: "var(--ink-blue)" }
+                }
+              >
+                <Heart size={16} className="shrink-0 mt-0.5" />
+                <span>{turn.handoff.line}</span>
+              </div>
+            )}
           </div>
         )}
 
-        {state === "error" && (
+        {/* errors */}
+        {(state === "error" || replyState === "error") && (
           <div
-            className="max-w-sm rounded-2xl px-5 py-4 text-sm"
+            className="w-full max-w-sm rounded-2xl px-5 py-4 text-sm"
             style={{ background: "var(--alert-bg)", color: "var(--alert-ink)" }}
             role="alert"
           >
-            {error}
+            {replyError || error}
           </div>
         )}
       </div>
 
       <footer className="pb-4" style={{ minHeight: 44 }}>
-        {(state === "done" || state === "error") && (
-          <button type="button" className="btn btn-soft" onClick={reset}>
+        {showReset && (
+          <button type="button" className="btn btn-soft" onClick={resetAll}>
             <RotateCcw size={16} />
-            Try again
+            Talk again
           </button>
         )}
       </footer>
