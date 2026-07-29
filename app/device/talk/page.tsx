@@ -54,7 +54,11 @@ export default function TalkPage() {
         const res = await fetch("/api/interact", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ text: transcript, child: { language: "en" } }),
+          body: JSON.stringify({
+            text: transcript,
+            childId: "maya",
+            child: { name: "Maya", companionName: "Pip", guardian: "your mom", language: "en" },
+          }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error ?? "The companion is unavailable.");

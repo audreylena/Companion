@@ -1,4 +1,5 @@
 import { respondToChild, CompanionError, type ChildContext } from "@/lib/companion";
+import { recordTurn } from "@/lib/companion/store";
 
 /**
  * POST /api/interact — the brain.
@@ -19,7 +20,7 @@ function fail(error: string, status: number) {
 }
 
 export async function POST(request: Request) {
-  let body: { text?: unknown; child?: ChildContext };
+  let body: { text?: unknown; child?: ChildContext; childId?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -32,6 +33,21 @@ export async function POST(request: Request) {
 
   try {
     const turn = await respondToChild({ text, ctx: body.child });
+
+    // Surface this moment in the parent dashboard (best-effort — never fail the
+    // child's reply because logging hiccuped).
+    try {
+      recordTurn({
+        childId: typeof body.childId === "string" ? body.childId : "maya",
+        childName: body.child?.name,
+        companionName: body.child?.companionName,
+        language: body.child?.language,
+        turn,
+      });
+    } catch (e) {
+      console.error("[interact] failed to record turn:", e);
+    }
+
     return Response.json(turn);
   } catch (err) {
     console.error("[interact] failed:", err);

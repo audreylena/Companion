@@ -13,6 +13,7 @@ import {
   type ToneKey,
   toneLabel,
 } from "@/lib/mock";
+import { useLiveFeed } from "@/components/useLiveFeed";
 
 type Mode = "reflections" | "scripture";
 type Range = "today" | "week" | "month" | "all";
@@ -42,7 +43,8 @@ export default function DiscussionsPage() {
   const [tone, setTone] = useState<ToneKey | null>(null);
   const [scriptureTheme, setScriptureTheme] = useState<ThemeCategory | null>(null);
 
-  const all = conversationsFor(child.id);
+  const live = useLiveFeed(child.id);
+  const all = conversationsFor(child.id, live);
   const list = useMemo(
     () =>
       all.filter(

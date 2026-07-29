@@ -28,6 +28,7 @@ import {
   ToneDistribution,
 } from "@/components/cards";
 import { weeklyStats, weeklyFrequency, themeEmoji, type ThemeCategory } from "@/lib/mock";
+import { useLiveFeed } from "@/components/useLiveFeed";
 
 const greetPart = () => {
   const h = new Date().getHours();
@@ -41,8 +42,9 @@ const today = new Date().toLocaleDateString("en-US", {
 
 export default function OverviewPage() {
   const { child } = useApp();
-  const stats = weeklyStats(child.id);
-  const freq = weeklyFrequency(child.id);
+  const live = useLiveFeed(child.id);
+  const stats = weeklyStats(child.id, live);
+  const freq = weeklyFrequency(child.id, live);
   const latest = stats.latest;
 
   const insights: { icon: typeof Lightbulb; text: string }[] = [];

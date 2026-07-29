@@ -387,15 +387,15 @@ export const languages: Language[] = [
 
 export const getChild = (id: string) => children.find((c) => c.id === id) ?? children[0];
 
-export const conversationsFor = (childId: string) =>
-  conversations
+export const conversationsFor = (childId: string, extra: Conversation[] = []) =>
+  [...extra, ...conversations]
     .filter((c) => c.childId === childId)
     .sort((a, b) => +new Date(b.date) - +new Date(a.date));
 
 export const latestConversation = (childId: string) => conversationsFor(childId)[0];
 
-export function weeklyStats(childId: string) {
-  const list = conversationsFor(childId);
+export function weeklyStats(childId: string, extra: Conversation[] = []) {
+  const list = conversationsFor(childId, extra);
   const week = list.filter((c) => +new Date(c.date) > Date.now() - 7 * 864e5);
   const themeCounts = new Map<ThemeCategory, number>();
   week.forEach((c) => themeCounts.set(c.theme, (themeCounts.get(c.theme) ?? 0) + 1));
@@ -413,10 +413,10 @@ export function weeklyStats(childId: string) {
 }
 
 // simple per-weekday frequency for the gentle weekly chart
-export function weeklyFrequency(childId: string) {
+export function weeklyFrequency(childId: string, extra: Conversation[] = []) {
   const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const counts = new Array(7).fill(0);
-  conversationsFor(childId)
+  conversationsFor(childId, extra)
     .filter((c) => +new Date(c.date) > Date.now() - 7 * 864e5)
     .forEach((c) => {
       const d = new Date(c.date).getDay(); // 0=Sun
