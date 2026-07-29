@@ -85,7 +85,7 @@ export function recordTurn(input: RecordInput): Conversation {
     toneKey: turn.tone,
     scriptureRef: turn.verse?.ref ?? "—",
     scriptureText: turn.verse?.text ?? "",
-    translation: input.language && input.language !== "en" ? input.language.toUpperCase() : "NIrV",
+    translation: turn.verse?.translation ?? "—",
     language: "English",
     askedForAdvice: turn.category === "in_scope",
     parentFollowUp: turn.handoff?.line ?? defaultFollowUp(turn.feeling, name),

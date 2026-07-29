@@ -35,16 +35,37 @@ const LANG3: Record<string, string> = {
   en: "eng", fr: "fra", es: "spa", pt: "por", sw: "swa", ar: "arb",
 };
 
-// Resolve a Bible id once per language, then reuse it. YouVersion requires an
-// id for passage lookups and we don't want to pay for /bibles on every turn.
-const bibleIdCache = new Map<string, string>();
+interface BibleRef {
+  id: string;
+  abbr: string;
+}
 
-async function resolveBibleId(lang: string): Promise<string | null> {
+// Pinned, kid-friendly translations. FBV (Free Bible Version) reads naturally
+// for children — "Don't be afraid, for I am with you!" — far better than the
+// archaic public-domain default that YouVersion returns first (ASV). Add a
+// per-language entry here as kid-friendly translations become available.
+const PREFERRED: Record<string, BibleRef> = {
+  eng: { id: "1932", abbr: "FBV" },
+};
+
+// Resolve a Bible once per language, then reuse it. YouVersion requires an id
+// for passage lookups and we don't want to pay for /bibles on every turn.
+const bibleCache = new Map<string, BibleRef>();
+
+async function resolveBible(lang: string): Promise<BibleRef | null> {
   const token = process.env.YOUVERSION_TOKEN;
   if (!token) return null;
   const lang3 = LANG3[lang] ?? "eng";
-  if (bibleIdCache.has(lang3)) return bibleIdCache.get(lang3)!;
+  if (bibleCache.has(lang3)) return bibleCache.get(lang3)!;
 
+  // Prefer a pinned kid-friendly translation when we have one for this language.
+  const pinned = PREFERRED[lang3];
+  if (pinned) {
+    bibleCache.set(lang3, pinned);
+    return pinned;
+  }
+
+  // Otherwise fall back to the first available Bible in that language.
   try {
     const res = await fetch(`${YV_BASE}/bibles?language_ranges[]=${lang3}`, {
       headers: { accept: "application/json", "X-YVP-App-Key": token },
@@ -55,8 +76,12 @@ async function resolveBibleId(lang: string): Promise<string | null> {
     const first = Array.isArray(list) ? list[0] : undefined;
     const id = first?.id ?? first?.bible_id;
     if (id != null) {
-      bibleIdCache.set(lang3, String(id));
-      return String(id);
+      const ref: BibleRef = {
+        id: String(id),
+        abbr: String(first?.abbreviation ?? first?.localized_abbreviation ?? "").toUpperCase(),
+      };
+      bibleCache.set(lang3, ref);
+      return ref;
     }
   } catch {
     /* fall through to null → local fallback */
@@ -80,17 +105,17 @@ function extractText(payload: unknown): string | null {
 export async function getVerse(feeling: Feeling, language = "en"): Promise<Verse> {
   const entry = BANK[feeling] ?? BANK.other;
 
-  const bibleId = await resolveBibleId(language);
-  if (bibleId) {
+  const bible = await resolveBible(language);
+  if (bible) {
     try {
       const res = await fetch(
-        `${YV_BASE}/bibles/${bibleId}/passages/${entry.usfm}`,
+        `${YV_BASE}/bibles/${bible.id}/passages/${entry.usfm}`,
         { headers: { accept: "application/json", "X-YVP-App-Key": process.env.YOUVERSION_TOKEN! } },
       );
       if (res.ok) {
         const text = extractText(await res.json());
         if (text) {
-          return { ref: entry.ref, text, language, source: "youversion" };
+          return { ref: entry.ref, text, translation: bible.abbr || undefined, language, source: "youversion" };
         }
       }
     } catch {
