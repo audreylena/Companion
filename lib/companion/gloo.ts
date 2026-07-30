@@ -118,12 +118,14 @@ export function createGlooProvider(): BrainProvider {
       const name = ctx.name ?? "friend";
       const age = ctx.age ?? "7";
 
+      // The app shows the verse on its own card, so the reply must NOT quote it
+      // verbatim or print the reference — just carry its comfort in plain words.
       const rules =
         category === "danger"
-          ? `This is serious. Stay calm and kind. Do NOT try to counsel or fix it. In 2 short sentences, tell ${name} they are not alone and they should tell ${guardian} right now, today. Do not quote a long verse.`
+          ? `This is serious. Stay calm and kind. Do NOT try to counsel or fix it. In 2 short sentences, tell ${name} they are not alone and they should tell ${guardian} right now, today. Do not include a verse.`
           : category === "wonder"
-          ? `This is a big question you should not answer alone. In 2-3 short sentences, gently say it's a wonderful question, share the verse simply, and warmly encourage ${name} to talk about it with ${guardian}.`
-          : `In 2-3 short, warm sentences, comfort ${name}, share the verse in simple words, and gently point them to God and to ${guardian}. Never encourage relying on you instead of God or grown-ups.`;
+          ? `This is a big question you should not answer alone. In 2-3 short sentences, gently say it's a wonderful question, offer the comfort of the verse in your OWN simple words (do not quote it or write the reference), and warmly encourage ${name} to talk about it with ${guardian}.`
+          : `In 2-3 short, warm sentences, comfort ${name}, carry the comfort of the verse in your OWN simple words (do not quote it verbatim or write the reference — a card already shows it), and gently point them to God and to ${guardian}. Never encourage relying on you instead of God or grown-ups.`;
 
       const system = `You are ${ctx.companionName ?? "a gentle faith companion"}, a warm, calm companion for a ${age}-year-old child. Speak simply and kindly, like a caring friend. Never sound like a robot or a therapist. ${rules}`;
 

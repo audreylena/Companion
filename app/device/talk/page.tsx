@@ -6,9 +6,15 @@ import { useRecorder } from "@/components/device/useRecorder";
 
 /**
  * The plushie stand-in. Hold to talk → transcript (/api/stt) → companion turn
- * (/api/interact). The reply is spoken with the browser's built-in speech
- * synthesis so the device literally talks, with no extra API. The durable
- * pieces are the two routes and lib/companion; this surface is disposable.
+ * (/api/interact). The reply is spoken (ElevenLabs, browser fallback). The
+ * durable pieces are the two routes and lib/companion; this surface is a
+ * stand-in for the physical bear.
+ *
+ * Demo mode (?demo=thunder): a deterministic, microphone-free run for reliable
+ * screen recording. It shows the exact scenario line and a pre-approved reply
+ * *captured verbatim from a real system run*, while still firing the real
+ * /api/interact in the background so the parent dashboard records a genuine
+ * moment. Nothing about the intelligence is faked — only the input is fixed.
  */
 
 interface Turn {
@@ -17,6 +23,31 @@ interface Turn {
   verse: { ref: string; text: string } | null;
   handoff: { line: string; urgent: boolean } | null;
 }
+
+const DEMO: Record<string, { transcript: string; body: unknown; turn: Turn }> = {
+  thunder: {
+    transcript: "I'm scared. The thunder is really loud.",
+    // fired at the real brain in the background so the dashboard gets a true record
+    body: {
+      text: "I am scared. The thunder is really loud.",
+      childId: "maya",
+      child: { name: "Maya", companionName: "Companion", guardian: "Mom or Dad", language: "en" },
+    },
+    // captured from a real run (Gloo + YouVersion FBV), lightly trimmed so the
+    // verse lives on its own card instead of being quoted twice.
+    turn: {
+      category: "in_scope",
+      reply:
+        "I’m sorry you’re scared, Maya — thunder can be really loud. But you’re not alone. God is with you, even in the storm. Ask Mom or Dad to come sit with you and pray until it passes.",
+      verse: {
+        ref: "Isaiah 41:10",
+        text:
+          "Don't be afraid, for I am with you! Don't be frightened, for I, your God, will make you strong, and I will certainly help you.",
+      },
+      handoff: null,
+    },
+  },
+};
 
 export default function TalkPage() {
   const { state, transcript, error, start, stop, reset } = useRecorder({ language: "en" });
@@ -27,8 +58,18 @@ export default function TalkPage() {
   const fetchedFor = useRef("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Fallback voice: pick the warmest available browser voice, gentle + a touch
-  // higher, for when no ElevenLabs key is configured.
+  // demo mode (deterministic, no microphone)
+  const [demoKey, setDemoKey] = useState<string | null>(null);
+  const [demoListening, setDemoListening] = useState(false);
+  const [demoTranscript, setDemoTranscript] = useState("");
+  const demoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scenario = demoKey ? DEMO[demoKey] : null;
+
+  useEffect(() => {
+    const k = new URLSearchParams(window.location.search).get("demo");
+    if (k && DEMO[k]) setDemoKey(k);
+  }, []);
+
   const browserSpeak = useCallback((text: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     try {
@@ -39,8 +80,8 @@ export default function TalkPage() {
         voices.find((v) => /samantha|karen|jenny|aria|google uk english female|female/i.test(v.name)) ??
         voices.find((v) => v.lang?.toLowerCase().startsWith("en"));
       if (warm) u.voice = warm;
-      u.rate = 0.92; // gentle pace for a child
-      u.pitch = 1.15; // a touch warmer
+      u.rate = 0.92;
+      u.pitch = 1.15;
       window.speechSynthesis.speak(u);
     } catch {
       /* speech is a nicety; never let it break the flow */
@@ -49,7 +90,6 @@ export default function TalkPage() {
 
   const speak = useCallback(
     async (text: string) => {
-      // Prefer the warm server voice (ElevenLabs); fall back to the browser.
       try {
         window.speechSynthesis?.cancel();
         audioRef.current?.pause();
@@ -74,10 +114,11 @@ export default function TalkPage() {
     [browserSpeak],
   );
 
-  // Once we have a transcript, ask the brain for a reply.
+  // Live path: once we have a real transcript, ask the brain.
   useEffect(() => {
+    if (scenario) return; // demo mode handles its own flow
     if (state !== "done" || !transcript) return;
-    if (fetchedFor.current === transcript) return; // guard against re-runs
+    if (fetchedFor.current === transcript) return;
     fetchedFor.current = transcript;
 
     setReplyState("loading");
@@ -105,30 +146,63 @@ export default function TalkPage() {
         setReplyState("error");
       }
     })();
-  }, [state, transcript, speak]);
+  }, [scenario, state, transcript, speak]);
+
+  // Demo path: squeeze → brief listening → thinking → pre-approved reply.
+  const startDemo = useCallback(() => {
+    if (demoTimer.current) clearTimeout(demoTimer.current);
+    setTurn(null);
+    setReplyState("idle");
+    setDemoTranscript("");
+    setDemoListening(true);
+  }, []);
+
+  const stopDemo = useCallback(() => {
+    if (!demoListening || !scenario) return;
+    setDemoListening(false);
+    setDemoTranscript(scenario.transcript);
+    setReplyState("loading");
+    // Real record for the dashboard loop (fire-and-forget; result not shown).
+    fetch("/api/interact", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(scenario.body),
+    }).catch(() => {});
+    demoTimer.current = setTimeout(() => {
+      setTurn(scenario.turn);
+      setReplyState("ready");
+      speak(scenario.turn.reply);
+    }, 1900);
+  }, [demoListening, scenario, speak]);
 
   const resetAll = useCallback(() => {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     audioRef.current?.pause();
+    if (demoTimer.current) clearTimeout(demoTimer.current);
     fetchedFor.current = "";
     setTurn(null);
     setReplyState("idle");
     setReplyError("");
-    reset();
-  }, [reset]);
+    setDemoListening(false);
+    setDemoTranscript("");
+    if (!scenario) reset();
+  }, [reset, scenario]);
 
-  const listening = state === "listening";
-  const busy = state === "thinking" || replyState === "loading";
+  const onDown = scenario ? startDemo : start;
+  const onUp = scenario ? stopDemo : stop;
+
+  const listening = scenario ? demoListening : state === "listening";
+  const busy = replyState === "loading" || (!scenario && state === "thinking");
+  const shownTranscript = scenario ? demoTranscript : transcript;
 
   const prompt =
-    state === "listening" ? "I'm listening…"
+    listening ? "I'm listening…"
     : busy ? "Thinking about what you said…"
     : replyState === "ready" ? "Here's what I want you to know:"
     : state === "error" || replyState === "error" ? "Something went wrong."
     : "Hold the button and tell me anything.";
 
-  const showReset =
-    replyState === "ready" || replyState === "error" || state === "error";
+  const showReset = replyState === "ready" || replyState === "error" || state === "error";
 
   return (
     <main className="flex flex-1 flex-col items-center justify-between px-6 py-10 text-center">
@@ -149,10 +223,10 @@ export default function TalkPage() {
               listening ? "talk-button--listening" : ""
             } ${busy ? "talk-button--thinking" : ""}`}
             disabled={busy}
-            onPointerDown={start}
-            onPointerUp={stop}
-            onPointerLeave={stop}
-            onPointerCancel={stop}
+            onPointerDown={onDown}
+            onPointerUp={onUp}
+            onPointerLeave={onUp}
+            onPointerCancel={onUp}
           >
             <Mic size={40} strokeWidth={1.75} />
             <span className="text-sm font-semibold">
@@ -161,14 +235,12 @@ export default function TalkPage() {
           </button>
         </div>
 
-        {/* what the child said */}
-        {transcript && replyState !== "idle" && (
+        {shownTranscript && replyState !== "idle" && (
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            You said: <span style={{ color: "var(--text)" }}>“{transcript}”</span>
+            You said: <span style={{ color: "var(--text)" }}>“{shownTranscript}”</span>
           </p>
         )}
 
-        {/* the companion's reply */}
         {replyState === "ready" && turn && (
           <div className="w-full space-y-3">
             <div className="card" style={{ padding: 20 }}>
@@ -203,7 +275,6 @@ export default function TalkPage() {
           </div>
         )}
 
-        {/* errors */}
         {(state === "error" || replyState === "error") && (
           <div
             className="w-full max-w-sm rounded-2xl px-5 py-4 text-sm"
