@@ -25,19 +25,54 @@ export default function TalkPage() {
   const [turn, setTurn] = useState<Turn | null>(null);
   const [replyError, setReplyError] = useState("");
   const fetchedFor = useRef("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const speak = useCallback((text: string) => {
+  // Fallback voice: pick the warmest available browser voice, gentle + a touch
+  // higher, for when no ElevenLabs key is configured.
+  const browserSpeak = useCallback((text: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.95; // a touch slower — gentler for a child
-      u.pitch = 1.1;
+      const voices = window.speechSynthesis.getVoices();
+      const warm =
+        voices.find((v) => /samantha|karen|jenny|aria|google uk english female|female/i.test(v.name)) ??
+        voices.find((v) => v.lang?.toLowerCase().startsWith("en"));
+      if (warm) u.voice = warm;
+      u.rate = 0.92; // gentle pace for a child
+      u.pitch = 1.15; // a touch warmer
       window.speechSynthesis.speak(u);
     } catch {
       /* speech is a nicety; never let it break the flow */
     }
   }, []);
+
+  const speak = useCallback(
+    async (text: string) => {
+      // Prefer the warm server voice (ElevenLabs); fall back to the browser.
+      try {
+        window.speechSynthesis?.cancel();
+        audioRef.current?.pause();
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        if (res.ok && (res.headers.get("content-type") ?? "").startsWith("audio")) {
+          const url = URL.createObjectURL(await res.blob());
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = () => URL.revokeObjectURL(url);
+          await audio.play();
+          return;
+        }
+      } catch {
+        /* fall through to the browser voice */
+      }
+      browserSpeak(text);
+    },
+    [browserSpeak],
+  );
 
   // Once we have a transcript, ask the brain for a reply.
   useEffect(() => {
@@ -74,6 +109,7 @@ export default function TalkPage() {
 
   const resetAll = useCallback(() => {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    audioRef.current?.pause();
     fetchedFor.current = "";
     setTurn(null);
     setReplyState("idle");
