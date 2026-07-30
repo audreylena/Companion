@@ -45,7 +45,11 @@ interface BibleRef {
 // archaic public-domain default that YouVersion returns first (ASV). Add a
 // per-language entry here as kid-friendly translations become available.
 const PREFERRED: Record<string, BibleRef> = {
-  eng: { id: "1932", abbr: "FBV" },
+  eng: { id: "1932", abbr: "FBV" }, // Free Bible Version — natural, kid-friendly
+  spa: { id: "3365", abbr: "PDT" }, // Palabra de Dios para Todos — simple Spanish
+  fra: { id: "93", abbr: "LSG" }, // Louis Segond — the readable French standard
+  por: { id: "3254", abbr: "BLT" }, // Bíblia Livre para Todos — modern Portuguese
+  arb: { id: "195", abbr: "ERV" }, // Easy-to-Read Translation — Arabic
 };
 
 // Resolve a Bible once per language, then reuse it. YouVersion requires an id
