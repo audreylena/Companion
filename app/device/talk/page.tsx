@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Mic, RotateCcw, BookOpen, Heart } from "lucide-react";
+import { RotateCcw, BookOpen, Heart } from "lucide-react";
 import { useRecorder } from "@/components/device/useRecorder";
 
 /**
@@ -200,7 +200,7 @@ export default function TalkPage() {
     : busy ? "Thinking about what you said…"
     : replyState === "ready" ? "Here's what I want you to know:"
     : state === "error" || replyState === "error" ? "Something went wrong."
-    : "Hold the button and tell me anything.";
+    : "Give me a squeeze and tell me anything.";
 
   const showReset = replyState === "ready" || replyState === "error" || state === "error";
 
@@ -228,9 +228,9 @@ export default function TalkPage() {
             onPointerLeave={onUp}
             onPointerCancel={onUp}
           >
-            <Mic size={40} strokeWidth={1.75} />
+            <span aria-hidden style={{ fontSize: 56, lineHeight: 1 }}>🧸</span>
             <span className="text-sm font-semibold">
-              {listening ? "Listening" : busy ? "One moment" : "Hold to talk"}
+              {listening ? "Listening" : busy ? "One moment" : "Squeeze to talk"}
             </span>
           </button>
         </div>
