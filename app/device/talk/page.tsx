@@ -6,15 +6,14 @@ import { useRecorder } from "@/components/device/useRecorder";
 
 /**
  * The plushie stand-in. Hold to talk → transcript (/api/stt) → companion turn
- * (/api/interact). The reply is spoken (ElevenLabs, browser fallback). The
- * durable pieces are the two routes and lib/companion; this surface is a
- * stand-in for the physical bear.
+ * (/api/interact). The reply is spoken (ElevenLabs, browser fallback).
  *
- * Demo mode (?demo=thunder): a deterministic, microphone-free run for reliable
- * screen recording. It shows the exact scenario line and a pre-approved reply
- * *captured verbatim from a real system run*, while still firing the real
- * /api/interact in the background so the parent dashboard records a genuine
- * moment. Nothing about the intelligence is faked — only the input is fixed.
+ * Two microphone-free modes for demos and testing (no OpenAI key needed):
+ *   ?demo=thunder   — deterministic: a fixed line + a reply captured verbatim
+ *                     from a real run (for reliable screen recording).
+ *   ?say=<text>     — type anything: squeeze → the LIVE brain answers your exact
+ *                     words (real Gloo + YouVersion). e.g. ?say=I had a nightmare
+ * In both, the intelligence is real; only the input is fixed.
  */
 
 interface Turn {
@@ -27,14 +26,11 @@ interface Turn {
 const DEMO: Record<string, { transcript: string; body: unknown; turn: Turn }> = {
   thunder: {
     transcript: "I'm scared. The thunder is really loud.",
-    // fired at the real brain in the background so the dashboard gets a true record
     body: {
       text: "I am scared. The thunder is really loud.",
       childId: "maya",
       child: { name: "Maya", companionName: "Companion", guardian: "Mom or Dad", language: "en" },
     },
-    // captured from a real run (Gloo + YouVersion FBV), lightly trimmed so the
-    // verse lives on its own card instead of being quoted twice.
     turn: {
       category: "in_scope",
       reply:
@@ -49,6 +45,12 @@ const DEMO: Record<string, { transcript: string; body: unknown; turn: Turn }> = 
   },
 };
 
+// What the plush says ALOUD: the reply plus the verse read gently — so a
+// screen-free child actually hears the Scripture, not just sees it on a card.
+function spokenFor(t: Turn): string {
+  return t.verse ? `${t.reply} The Bible says, ${t.verse.text}` : t.reply;
+}
+
 export default function TalkPage() {
   const { state, transcript, error, start, stop, reset } = useRecorder({ language: "en" });
 
@@ -57,17 +59,58 @@ export default function TalkPage() {
   const [replyError, setReplyError] = useState("");
   const fetchedFor = useRef("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const silentUrlRef = useRef<string | null>(null);
 
-  // demo mode (deterministic, no microphone)
+  // A persistent, pre-unlocked audio element. Playing a silent clip during the
+  // squeeze "blesses" it so Safari/iOS still let us play the TTS reply that
+  // arrives a few seconds later (after an await), instead of blocking it.
+  useEffect(() => {
+    audioRef.current = new Audio();
+    audioRef.current.preload = "auto";
+    const bytes = new Uint8Array(844);
+    const dv = new DataView(bytes.buffer);
+    const w = (o: number, s: string) => {
+      for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i));
+    };
+    w(0, "RIFF"); dv.setUint32(4, 836, true); w(8, "WAVE"); w(12, "fmt ");
+    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+    dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true);
+    dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
+    w(36, "data"); dv.setUint32(40, 800, true);
+    for (let i = 44; i < 844; i++) bytes[i] = 128;
+    silentUrlRef.current = URL.createObjectURL(new Blob([bytes], { type: "audio/wav" }));
+    return () => {
+      if (silentUrlRef.current) URL.revokeObjectURL(silentUrlRef.current);
+    };
+  }, []);
+
+  const primeAudio = useCallback(() => {
+    const a = audioRef.current;
+    if (!a || !silentUrlRef.current) return;
+    try {
+      a.src = silentUrlRef.current;
+      void a.play().catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // scripted (microphone-free) modes
   const [demoKey, setDemoKey] = useState<string | null>(null);
-  const [demoListening, setDemoListening] = useState(false);
-  const [demoTranscript, setDemoTranscript] = useState("");
+  const [sayText, setSayText] = useState<string | null>(null);
+  const [scriptedListening, setScriptedListening] = useState(false);
+  const [scriptedTranscript, setScriptedTranscript] = useState("");
   const demoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const scenario = demoKey ? DEMO[demoKey] : null;
+  const scripted = Boolean(scenario) || Boolean(sayText);
 
   useEffect(() => {
-    const k = new URLSearchParams(window.location.search).get("demo");
+    const params = new URLSearchParams(window.location.search);
+    const k = params.get("demo");
     if (k && DEMO[k]) setDemoKey(k);
+    const s = params.get("say");
+    if (s && s.trim()) setSayText(s.trim());
   }, []);
 
   const browserSpeak = useCallback((text: string) => {
@@ -92,7 +135,6 @@ export default function TalkPage() {
     async (text: string) => {
       try {
         window.speechSynthesis?.cancel();
-        audioRef.current?.pause();
         const res = await fetch("/api/tts", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -100,38 +142,34 @@ export default function TalkPage() {
         });
         if (res.ok && (res.headers.get("content-type") ?? "").startsWith("audio")) {
           const url = URL.createObjectURL(await res.blob());
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.onended = () => URL.revokeObjectURL(url);
-          await audio.play();
+          const a = audioRef.current ?? new Audio();
+          audioRef.current = a;
+          a.pause();
+          a.src = url; // reuse the element unlocked during the squeeze
+          a.onended = () => URL.revokeObjectURL(url);
+          await a.play();
           return;
         }
-      } catch {
-        /* fall through to the browser voice */
+      } catch (e) {
+        console.warn("[speak] server voice failed; using browser voice", e);
       }
       browserSpeak(text);
     },
     [browserSpeak],
   );
 
-  // Live path: once we have a real transcript, ask the brain.
-  useEffect(() => {
-    if (scenario) return; // demo mode handles its own flow
-    if (state !== "done" || !transcript) return;
-    if (fetchedFor.current === transcript) return;
-    fetchedFor.current = transcript;
-
-    setReplyState("loading");
-    setTurn(null);
-    setReplyError("");
-
-    (async () => {
+  // The live brain call — shared by the mic path and ?say= mode.
+  const runBrain = useCallback(
+    async (text: string) => {
+      setReplyState("loading");
+      setTurn(null);
+      setReplyError("");
       try {
         const res = await fetch("/api/interact", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            text: transcript,
+            text,
             childId: "maya",
             child: { name: "Maya", companionName: "Pip", guardian: "your mom", language: "en" },
           }),
@@ -140,40 +178,57 @@ export default function TalkPage() {
         if (!res.ok) throw new Error(data?.error ?? "The companion is unavailable.");
         setTurn(data);
         setReplyState("ready");
-        speak(data.reply);
+        speak(spokenFor(data));
       } catch (e) {
         setReplyError(e instanceof Error ? e.message : "Something went wrong.");
         setReplyState("error");
       }
-    })();
-  }, [scenario, state, transcript, speak]);
+    },
+    [speak],
+  );
 
-  // Demo path: squeeze → brief listening → thinking → pre-approved reply.
-  const startDemo = useCallback(() => {
+  // Live mic path: once we have a real transcript, ask the brain.
+  useEffect(() => {
+    if (scripted) return; // demo / say modes handle their own flow
+    if (state !== "done" || !transcript) return;
+    if (fetchedFor.current === transcript) return;
+    fetchedFor.current = transcript;
+    runBrain(transcript);
+  }, [scripted, state, transcript, runBrain]);
+
+  // Scripted path: squeeze → brief listening → response.
+  const startScripted = useCallback(() => {
     if (demoTimer.current) clearTimeout(demoTimer.current);
     setTurn(null);
     setReplyState("idle");
-    setDemoTranscript("");
-    setDemoListening(true);
+    setScriptedTranscript("");
+    setScriptedListening(true);
   }, []);
 
-  const stopDemo = useCallback(() => {
-    if (!demoListening || !scenario) return;
-    setDemoListening(false);
-    setDemoTranscript(scenario.transcript);
-    setReplyState("loading");
-    // Real record for the dashboard loop (fire-and-forget; result not shown).
-    fetch("/api/interact", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(scenario.body),
-    }).catch(() => {});
-    demoTimer.current = setTimeout(() => {
-      setTurn(scenario.turn);
-      setReplyState("ready");
-      speak(scenario.turn.reply);
-    }, 1900);
-  }, [demoListening, scenario, speak]);
+  const stopScripted = useCallback(() => {
+    if (!scriptedListening) return;
+    setScriptedListening(false);
+
+    if (scenario) {
+      // deterministic: pre-approved reply + a real background record for the dashboard
+      setScriptedTranscript(scenario.transcript);
+      setReplyState("loading");
+      fetch("/api/interact", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(scenario.body),
+      }).catch(() => {});
+      demoTimer.current = setTimeout(() => {
+        setTurn(scenario.turn);
+        setReplyState("ready");
+        speak(spokenFor(scenario.turn));
+      }, 1900);
+    } else if (sayText) {
+      // live: the real brain answers the typed words
+      setScriptedTranscript(sayText);
+      runBrain(sayText);
+    }
+  }, [scriptedListening, scenario, sayText, speak, runBrain]);
 
   const resetAll = useCallback(() => {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
@@ -183,17 +238,21 @@ export default function TalkPage() {
     setTurn(null);
     setReplyState("idle");
     setReplyError("");
-    setDemoListening(false);
-    setDemoTranscript("");
-    if (!scenario) reset();
-  }, [reset, scenario]);
+    setScriptedListening(false);
+    setScriptedTranscript("");
+    if (!scripted) reset();
+  }, [reset, scripted]);
 
-  const onDown = scenario ? startDemo : start;
-  const onUp = scenario ? stopDemo : stop;
+  const rawDown = scripted ? startScripted : start;
+  const onDown = () => {
+    primeAudio(); // unlock audio within the user gesture so the reply can play
+    rawDown();
+  };
+  const onUp = scripted ? stopScripted : stop;
 
-  const listening = scenario ? demoListening : state === "listening";
-  const busy = replyState === "loading" || (!scenario && state === "thinking");
-  const shownTranscript = scenario ? demoTranscript : transcript;
+  const listening = scripted ? scriptedListening : state === "listening";
+  const busy = replyState === "loading" || (!scripted && state === "thinking");
+  const shownTranscript = scripted ? scriptedTranscript : transcript;
 
   const prompt =
     listening ? "I'm listening…"
